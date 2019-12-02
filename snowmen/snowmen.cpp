@@ -1,10 +1,3 @@
-// IMP Consult https://www.khronos.org/opengl/wiki/
-
-// TBD
-// - Modify all comments
-// - Get Rid of Hard-Coded Values
-// - ONLY USE glOrho!
-
 #include <iostream>
 #include <cmath>
 #include <GL/glut.h>
@@ -38,8 +31,6 @@ static Vertex3f getSphereVertex(Vertex3f centre, float radius,
 static void drawArm(Vertex3f start, float length, Vertex3f dirVector);
 static void drawButtons(Vertex3f centre, float radius, int num);
 static void drawEyes(Vertex3f trans, float radius, float seperation);
-
-// TBD
 static void drawHat();
 static void drawMuffler();
 static void drawSunglasses();
@@ -51,7 +42,7 @@ int main(int argc, char **argv)
 	glutInitWindowSize(640, 360);
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow("Snowmen");
-	// Set the background Dark blue
+	// Set the background's color
 	glClearColor(COLOR_BACKGROUND.getR(), COLOR_BACKGROUND.getG(),
 		     COLOR_BACKGROUND.getB(), 0.0f);
 	// Cull triangles that do not face the camera
@@ -59,8 +50,12 @@ int main(int argc, char **argv)
 	// Enable Anti-aliasing
 	glEnable(GL_LINE_SMOOTH);
 
+	glShadeModel(GL_FLAT);
+
 	// Finish off initializing the window
 	initializeWindow();
+
+	setCameraPosition();
 
 	glutMainLoop();
 
@@ -87,25 +82,25 @@ void initScene(void)
 
 GLuint createDisplayList(void)
 {
-	// Create an id for the list
+	// Create two lists
 	GLuint snowMenDisplayList = glGenLists(2);
 
-	// Create the snowman
+	// Add an snowman to the 2nd list
 	glNewList(snowMenDisplayList + 1, GL_COMPILE);
 	drawSnowMan();
 	glEndList();
 
-	// Begin the list
+	// Begin the 1st list i.e. the one containing the snowmen
 	glNewList(snowMenDisplayList, GL_COMPILE);
-	// Invoke the rendering func
-	for(int i = -3; i < 3; i++)
-		for(int j = -3; j < 3; j++) {
+	// Add the snowmen
+	for(int i = 0; i < 1; i++)
+		for(int j = 0; j < 1; j++) {
 			glPushMatrix();
 			glTranslatef(i * 10.0, 0, j * 10.0);
 			glCallList(snowMenDisplayList + 1);
 			glPopMatrix();
 		}
-	// End the List
+	// End the 1st list
 	glEndList();
 
 	return snowMenDisplayList;
@@ -121,9 +116,10 @@ void displayScene(void)
 	}
 
 	// TBD Most probably don't need to set Depth Buffer for Ortho projec!
+	// Clear the buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// Draw ground
+	// Draw the ground
 	glColor3f(COLOR_GROUND.getR(), COLOR_GROUND.getG(),
 		  COLOR_GROUND.getB());
 	glBegin(GL_QUADS);
@@ -135,8 +131,7 @@ void displayScene(void)
 
 	// TBD Draw Trees
 
-	// TBD Only Draw As Many Required!
-	// Draw 36 Snow Men
+	// Draw the Snow Men
 	glCallList(snowmenDisplayList);
 
 	glutSwapBuffers();
@@ -193,7 +188,7 @@ void drawSnowMan(void)
 	glColor3f(COLOR_MOUTH.getR(), COLOR_MOUTH.getG(),
 		  COLOR_MOUTH.getB());
 	glLineWidth(3);
-	Vertex3f centre(0.0f, -0.1875f, 0.0625f);
+	Vertex3f centre(0.0f, -0.1875f, 0.025f);
 	drawArc(getSphereVertex(centre, 0.25f, -M_PI / 4, -M_PI / 4),
 		getSphereVertex(centre, 0.25f, -M_PI / 8, -M_PI / 8),
 		getSphereVertex(centre, 0.25f, M_PI / 8, M_PI / 8),
@@ -281,7 +276,7 @@ void drawEyes(Vertex3f trans, float radius, float seperation)
 	glPopMatrix();
 }
 
-// Rotate camera when the direction keys are pressed
+// Rotate camera upn the dir. keys being depressed
 void downKey(int key, int x, int y)
 {
 	switch (key) {
@@ -303,7 +298,7 @@ void downKey(int key, int x, int y)
 	}
 }
 
-// Do bounds checking upon the release the direction keys
+// Check that the vars. are in bonund upon the direction keys being  release
 void upKey(int key, int x, int y)
 {
 	switch (key) {
@@ -347,22 +342,22 @@ void rotateTheta(float angle)
 
 void modifySize(int newWidth, int newHeight)
 {
-	// Ensure that the newHeight ain't zero
+	// Ensure that the newHeight is not zero
 	if(newHeight == 0) newHeight = 1;
 
 	width = newWidth;
 	height = newHeight;
 	aspectRatio = 1.0f * width / height;
 
-	// Reset the coordinate system before modifying
+	// Reset the coordinate system
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 
-	// Set the viewport to be the entire window
+	// Set the viewport to encompass the entire window
 	glViewport(0, 0, width, height);
 
-	// Set the clipping volume
 	// TBD Switch to glOrtho!
+	// Set the clipping area
 	gluPerspective(45, aspectRatio, 0.1, 1000);
 	glMatrixMode(GL_MODELVIEW);
 	setCameraPosition();
@@ -404,14 +399,26 @@ void drawArc(Vertex3f p0, Vertex3f p1, Vertex3f p2, Vertex3f p3,
 void drawHat()
 {
 	// TBD
+	glPushMatrix();
+	glBegin(GL_LINES);
+	glEnd();
+	glPopMatrix();
 }
 
 void drawMuffler()
 {
 	// TBD
+	glPushMatrix();
+	glBegin(GL_LINES);
+	glEnd();
+	glPopMatrix();
 }
 
 void drawSunglasses()
 {
 	// TBD
+	glPushMatrix();
+	glBegin(GL_LINES);
+	glEnd();
+	glPopMatrix();
 }
