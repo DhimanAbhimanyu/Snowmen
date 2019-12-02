@@ -1,0 +1,160 @@
+Notes made off http://www.songho.ca/opengl/index.html
+
+- glViewport() command is used to define the rectangle of the rendering area where the final image is mapped. And, glDepthRange() is used to determine the z value of the window coordinates. The window coordinates are computed with the given parameters of the above 2 functions;
+
+	glViewport(x, y, w, h);
+	glDepthRange(n, f);
+
+- Model-View Matrix (GL_MODELVIEW): Each vertex and normal coordinates are transformed by GL_MODELVIEW matrix (from object coordinates to eye coordinates).
+- Projection Matrix (GL_PROJECTION): GL_PROJECTION matrix is used to define the frustum. This frustum determines which objects or portions of objects will be clipped out. Also, it determines how the 3D scene is projected onto the screen. OpenGL provides 2 functions for GL_PROJECTION transformation. glFrustum() is to produce a perspective projection, and glOrtho() is to produce a orthographic (parallel) projection. Both functions require 6 parameters to specify 6 clipping planes; left, right, bottom, top, near and far planes. 8 vertices of the viewing frustum are shown in the following image.
+- Texture Matrix (GL_TEXTURE): Texture coordinates (s, t, r, q) are multiplied by GL_TEXTURE matrix before any texture mapping. By default it is the identity, so texture will be mapped to objects exactly where you assigned the texture coordinates. By modifying GL_TEXTURE, you can slide, rotate, stretch, and shrink the texture.
+- Texture Matrix (GL_TEXTURE): Texture coordinates (s, t, r, q) are multiplied by GL_TEXTURE matrix before any texture mapping. By default it is the identity, so texture will be mapped to objects exactly where you assigned the texture coordinates. By modifying GL_TEXTURE, you can slide, rotate, stretch, and shrink the texture.
+- Other Matrix Routines
+  > glPushMatrix(): push the current matrix into the current matrix stack.
+  > glPopMatrix(): pop the current matrix from the current matrix stack.
+  > glLoadIdentity(): set the current matrix to the identity matrix.
+  > glLoadMatrix{fd}(m): replace the current matrix with the matrix m.
+  > glLoadTransposeMatrix{fd}(m): replace the current matrix with the row-major ordered matrix m.
+  > glMultMatrix{fd}(m): multiply the current matrix by the matrix m, and update the result to the current matrix.
+  > glMultTransposeMatrix{fd}(m): multiply the current matrix by the row-major ordered matrix m, and update the result to the current matrix.
+  > glGetFloatv(GL_MODELVIEW_MATRIX, m): return 16 values of GL_MODELVIEW matrix to m.
+
+
+
+		OpenGL Projection Matrix
+
+- Overview
+A computer monitor is a 2D surface. A 3D scene rendered by OpenGL must be projected onto the computer screen as a 2D image. GL_PROJECTION matrix is used for this projection transformation. First, it transforms all vertex data from the eye coordinates to the clip coordinates. Then, these clip coordinates are also transformed to the normalized device coordinates (NDC) by dividing with w component of the clip coordinates.
+Therefore, we have to keep in mind that both clipping (frustum culling) and NDC transformations are integrated into GL_PROJECTION matrix. The following sections describe how to build the projection matrix from 6 parameters; left, right, bottom, top, near and far boundary values.
+Note that the frustum culling (clipping) is performed in the clip coordinates, just before dividing by wc. The clip coordinates, xc, yc and zc are tested by comparing with wc. If any clip coordinate is less than -wc, or greater than wc, then the vertex will be discarded.
+
+	-wc < xc,yc,zc < wc
+
+Then, OpenGL will reconstruct the edges of the polygon where clipping occurs.
+
+- Perspective Projection
+In perspective projection, a 3D point in a truncated pyramid frustum (eye coordinates) is mapped to a cube (NDC); the range of x-coordinate from [l, r] to [-1, 1], the y-coordinate from [b, t] to [-1, 1] and the z-coordinate from [-n, -f] to [-1, 1].
+Note that the eye coordinates are defined in the right-handed coordinate system, but NDC uses the left-handed coordinate system. That is, the camera at the origin is looking along -Z axis in eye space, but it is looking along +Z axis in NDC. Since glFrustum() accepts only positive values of near and far distances, we need to negate them during the construction of GL_PROJECTION matrix.
+In OpenGL, a 3D point in eye space is projected onto the near plane (projection plane).
+From the top view of the frustum, the x-coordinate of eye space, xe is mapped to xp, which is calculated by using the ratio of similar triangles. So;
+
+	xp / xe = -n / ze
+	yp / ye = -n / ze
+
+Note that both xp and yp depend on ze; they are inversely propotional to -ze. In other words, they are both divided by -ze. It is a very first clue to construct GL_PROJECTION matrix. After the eye coordinates are transformed by multiplying GL_PROJECTION matrix, the clip coordinates are still a homogeneous coordinates. It finally becomes the normalized device coordinates (NDC) by divided by the w-component of the clip coordinates.
+
+	V4clip = M4projection . V4eye, V3ndc = V3eye / w-clip,
+		where V4eye = (x-eye, y-eye, z-eye, w-eye),
+		      V4clip = (x-clip, y-clip, z-clip, w-clip)
+
+Also, relation between ze and zn is;
+	zn = (-(f + n) / (f - n) . ze - 2 . f . n / (f - n)) / -ze,
+		where n & f are the range of the z-coord, [-n, -f] to [-1, 1]
+
+- Orthographic Projection
+Constructing GL_PROJECTION matrix for orthographic projection is much simpler than perspective mode.
+All xe, ye and ze components in eye space are linearly mapped to NDC. We just need to scale a rectangular volume to a cube, then move it to the origin. Let's find out the elements of GL_PROJECTION using linear relationship
+Since w-component is not necessary for orthographic projection, the 4th row of GL_PROJECTION matrix remains as (0, 0, 0, 1). Therefore, the complete GL_PROJECTION matrix for orthographic projection is;
+
+	| 2 / (r - l)	0		0		- (r + l) / (r - l) |
+	| 0		2 / (t - b)	0		- (t + b) / (t - b) |
+	| 0		0      	 	- 2 / (f - n)	- (f + n) / (f - n) |
+	| 0		0		0     	   	1      	       	    |
+
+It can be further simplified if the viewing volume is symmetrical, r = -l and t = -b. So,
+
+r + l = 0 	  	     	t + b = 0
+r - l = 2r (width)	,	t - b = 2t (height)
+
+This leads to:
+
+| 1 / r	   0		0		0      	       	    |
+| 0   	   1 / t	0		0      	       	    |
+| 0	   0   		- 2 / (f - n)	- (f + n) / (f - n) |
+| 0	   0		0     	   	1      	       	    |
+
+
+
+  	   		OpenGL Camera
+
+- Overview
+OpenGL doesn't explicitly define neither camera object nor a specific matrix for camera transformation. Instead, OpenGL transforms the entire scene (including the camera) inversely to a space, where a fixed camera is at the origin (0,0,0) and always looking along -Z axis. This space is called eye space.
+
+Because of this, OpenGL uses a single GL_MODELVIEW matrix for both object transformation to world space and camera (view) transformation to eye space.
+
+You may break it down into 2 logical sub matrices;
+
+    MmodelView = Mview . Mmodel
+
+That is, each object in a scene is transformed with its own Mmodel first, then the entire scene is transformed reversely with Mview. In this page, we will discuss only Mview for camera transformation in OpenGL.
+
+- LookAt
+
+gluLookAt() is used to construct a viewing matrix where a camera is located at the eye position (xe, ye, ze) and looking at (or rotating to) the target point (xt, yt, zt). The eye position and target are defined in world space. This section describes how to implement the viewing matrix equivalent to gluLookAt().
+
+Camera's lookAt transformation consists of 2 transformations; translating the whole scene inversely from the eye position to the origin (MT), and then rotating the scene with reverse orientation (MR), so the camera is positioned at the origin and facing to the -Z axis.
+
+	 Mview = MR . MT
+
+ Suppose a camera is located at (2, 0, 3) and looking at (0, 0, 0) in world space. In order to construct the viewing matrix for this case, we need to translate the world to (-2, 0, -3) and rotate it about -33.7 degree along Y-axis. As a result, the virtual camera becomes facing to -Z axis at the origin.
+
+The translation part of lookAt is easy. You simply move the camera position to the origin. The translation matrix MT would be (replacing the 4th coloumn with the negated eye position);
+
+	MT = | 1	0    0	-xe |
+	     | 0	1    0	-ye |
+	     | 0	0    1	-ze |
+	     | 0	0    0	1   |
+
+The rotation part MR of lookAt is much harder than translation because you have to calculate 1st, 2nd and 3rd columns of the rotation matrix all together.
+
+First, compute the normalized forward vector forward vector from the target position vt to the eye position ve of the rotation matrix. Note that the forward vector is from the target to the eye position, not eye to target because the scene is actually rotated, not the camera is.
+
+       ve - vt = (xe - xt, ye - yt, ze - zt)
+       f = (ve - vt) / ||ve - vt||  (forward vector)
+
+Second, compute the normalized left vector left vector by performing cross product with a given camera's up vector. If the up vector is not provided, you may use (0, 1, 0) by assuming the camera is straight up to +Y axis.
+
+	left = up . f
+	l = left / ||left||
+
+Finally, re-calculate the normalized up vector u vector by doing cross product the forward and left vectors, so all 3 vectors are orthonormal (perpendicular and unit length). Note we do not normalize the up vector because the cross product of 2 perpendicular unit vectors also produces a unit vector.
+
+	 u = f . l
+
+These 3 basis vectors, l, u and f are used to construct the rotation matrix MR of lookAt, however, the rotation matrix must be inverted. Suppose a camera is located above a scene. The whole secene must rotate downward inversely, so the camera is facing to -Z axis. In a similar way, if the camera is located at the left of the scene, the scene should rotate to right in order to align the camera to -Z axis.
+
+Therefore, the rotation part MR of lookAt is finding the rotation matrix from the target to the eye position, then invert it. And, the inverse matrix is equal to its transpose matrix because it is orthogonal which each column has unit length and perpendicular to the other column.
+
+	   MR = | lx	ux   fx	0 | -1
+	        | ly	uy   fy	0 |
+		| lz	uz   fz	0 |
+		| 0	0    0	1 |
+
+	      = | lx	ux   fx	0 | T
+	        | ly	uy   fy 0 |
+		| lz	uz   fz	0 |
+		| 0	0    0	1 |
+
+	      = | lx	ly   lz	0 |
+	        | ux	uy   uz	0 |
+		| fx	fy   fz	0 |
+		| 0	0    0	1 |
+
+Finally, the view matrix for camera's lookAt transform is multiplying MT and MR together;
+
+	 Mview = MR . MT
+	       = | lx	ly   lz	0 | | 1	   0    0	-xe |
+	         | ux	uy   uz	0 | | 0	   1    0	-ye |
+		 | fx	fy   fz	0 | | 0	   0    1	-ze |
+		 | 0	0    0	1 | | 0	   0    0	1   |
+	       = | lx	ly   lz	  -lx . xe - ly . xy - lz . xz |
+	         | ux	uy   uz	  -ux . xe - uy . xy - uz . xz |
+	         | fx	fy   fz	  -fx . xe - fy . xy - fz . xz |
+		 | 0	0    0	  1                            |
+
+
+
+
+OpenGL Vertex Array -> http://www.songho.ca/opengl/gl_vertexarray.html
+OpenGL Display List -> http://www.songho.ca/opengl/gl_displaylist.html
+OpenGL Vertex Buffer Object (VBO) -> http://www.songho.ca/opengl/gl_vbo.html
