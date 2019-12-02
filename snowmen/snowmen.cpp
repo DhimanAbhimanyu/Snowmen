@@ -8,9 +8,7 @@
 #include "vector3f.hpp"
 #include "consts.hpp"
 
-static float theta = 0.0, modTheta = 0.0, aspectRatio, modPos = 0.0;
-static Vector3f viewPos(0.0f, 1.75f, 5.0f);
-static Vector3f deltaViewPos(0.0f, 0.0f, -1.0f);
+static float aspectRatio;
 static int height, width;
 static GLint snowmenDisplayList;
 
@@ -19,17 +17,15 @@ static void initScene(void);
 static GLuint createDisplayList(void);
 static void displayScene(void);
 static void drawSnowMan(void);
-static void downKey(int key, int x, int y);
-static void upKey(int key, int x, int y);
 static void procKeys(unsigned char key, int x, int y);
-static void moveDisp(float disp);
-static void rotateTheta(float angle);
 static void modifySize(int newWidth, int newHeight);
 static void setCameraPosition(void);
-static void drawArc(Vector3f p0, Vector3f p1, Vector3f p2, Vector3f p3,
-		    int numPoints);
+
 static Vector3f getSphereVertex(Vector3f centre, float radius,
 				float theta, float phi);
+
+static void drawArc(Vector3f p0, Vector3f p1, Vector3f p2, Vector3f p3,
+		    int numPoints);
 static void drawArm(Vector3f start, float length, Vector3f dirVector);
 static void drawButtons(Vector3f centre, float radius, int num);
 static void drawEyes(Vector3f trans, float radius, float seperation);
@@ -74,8 +70,6 @@ void initializeWindow(void)
 	// Set up the callbacks for the keyboard
 	glutIgnoreKeyRepeat(1);
 	glutKeyboardFunc(procKeys);
-	glutSpecialFunc(downKey);
-	glutSpecialUpFunc(upKey);
 
 	// Initialize the scene to be displayed
 	initScene();
@@ -114,13 +108,6 @@ GLuint createDisplayList(void)
 
 void displayScene(void)
 {
-	if (modPos)
-		moveDisp(modPos);
-	if (modTheta) {
-		theta += modTheta;
-		rotateTheta(theta);
-	}
-
 	// Clear the buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -294,68 +281,10 @@ void drawEyes(Vector3f trans, float radius, float seperation)
 	glPopMatrix();
 }
 
-// Rotate camera upn the dir. keys being depressed
-void downKey(int key, int x, int y)
-{
-	switch (key) {
-	case GLUT_KEY_LEFT:
-		modTheta = -0.01f;
-		break;
-
-	case GLUT_KEY_RIGHT:
-		modTheta = 0.01f;
-		break;
-
-	case GLUT_KEY_UP:
-		modPos = 1.0;
-		break;
-
-	case GLUT_KEY_DOWN:
-		modPos = -1.0;
-		break;
-	}
-}
-
-// Check that the vars. are in bonund upon the direction keys being  release
-void upKey(int key, int x, int y)
-{
-	switch (key) {
-	case GLUT_KEY_LEFT:
-		if (modTheta < 0.0f) modTheta = 0.0f;
-		break;
-
-	case GLUT_KEY_RIGHT:
-		if (modTheta > 0.0f) modTheta = 0.0f;
-		break;
-
-	case GLUT_KEY_UP:
-		if (modPos > 0.0f) modPos = 0.0f;
-		break;
-
-	case GLUT_KEY_DOWN:
-		if (modPos < 0.0f) modPos = 0.0f;
-		break;
-	}
-}
-
 // Quit upon 'Esc' or 'q'
 void procKeys(unsigned char key, int x, int y)
 {
 	if (key == 27 || key == 'q') exit(0);
-}
-
-void moveDisp(float disp)
-{
-	viewPos.setX(viewPos.getX() + disp * deltaViewPos.getX() * 0.1);
-	viewPos.setZ(viewPos.getZ() + disp * deltaViewPos.getZ() * 0.1);
-	setCameraPosition();
-}
-
-void rotateTheta(float angle)
-{
-	deltaViewPos.setX(sin(angle));
-	deltaViewPos.setZ(-cos(angle));
-	setCameraPosition();
 }
 
 void modifySize(int newWidth, int newHeight)
@@ -459,133 +388,3 @@ void drawSunglasses()
 	glEnd();
 	glPopMatrix();
 }
-
-#if 0
-// For Hat & Muffler,
-// Either Use the Following Soln Or Use glBegin(GL_POLYGONS)
-
-#define PIby180 (M_PI/180.0f)
-
-class Vector3
-{
-private:
-	float x,y,z;
-public:
-	Vector3(float coordx=0,float coordy=0,float coordz=0)
-		: x(coordx),y(coordy),z(coordz){}
-	Vector3(const Vector3 &v) : x(v.x),y(v.y),z(v.z){}
-	float X() const { return x; }
-	float Y() const { return y; }
-	float Z() const { return z; }
-	float length() const { return sqrt(x*x+y*y+z*z); }
-
-	float operator*(const Vector3 &v) const
-	{
-		return x*v.x+y*v.y+z*v.z;
-	}
-
-	static float anglebetweeninradian(const Vector3 &v1,const Vector3 &v2)
-	{
-		return acos((v1*v2)/(v1.length()*v2.length()));
-	}
-
-
-	Vector3 operator-(const Vector3 &other) const
-	{
-		return Vector3(x-other.x,y-other.y,z-other.z);
-	}
-
-
-	Vector3 &operator =(const Vector3& other)
-	{
-		x=other.x;
-		y=other.y;
-		z=other.z;
-		return *this;
-	}
-
-
-	Vector3 &operator -=(const Vector3& other)
-	{
-		x-=other.x;
-		y-=other.y;
-		z-=other.z;
-		return *this;
-	}
-
-	Vector3 Rotate(Vector3 v,const float &theta1)  const
-	{
-		float a = 0, b = 0, c = 0;
-
-		float theta=(float)(theta1*PIby180);
-
-		a=(cos(theta)+(v.x*v.x)*(1-cos(theta)))*x;
-		a+=(v.x*v.y*(1-cos(theta))-v.z*sin(theta))*y;
-		a+=(v.x*v.z*(1-cos(theta))+v.y*sin(theta))*z;
-
-		b=(v.y*v.x*(1-cos(theta))+v.z*sin(theta))*x;
-		b+=(cos(theta)+v.y*v.y*(1-cos(theta)))*y;
-		b+=(v.y*v.z*(1-cos(theta))-v.x*sin(theta))*z;
-
-		c=(v.z*v.x*(1-cos(theta))-v.y*sin(theta))*x;
-		c+=(v.z*v.y*(1-cos(theta))+v.x*sin(theta))*y;
-		c+=(cos(theta)+v.z*v.z*(1-cos(theta)))*z;
-		return Vector3(a, b, c);
-	}
-};
-
-using namespace std;
-
-
-void DrawCylinder(float radius,float height,Vector3 center,Vector3 axis)
-{
-	Vector3 pos=Vector3(0,0,height/2);
-	float theta=Vector3::anglebetweeninradian(axis,Vector3(0,0,1))/PIby180;
-	pos=pos.Rotate(Vector3(axis.Y(),axis.X(),0),theta);
-	center-=pos;
-	glPushMatrix();
-	glTranslatef(center.X(),center.Y(),center.Z());
-	glRotatef(theta,axis.Y(),axis.X(),0);
-	glutSolidCylinder(radius,height,50,50);
-	glPopMatrix();
-}
-
-void idle(void)
-{
-	glutPostRedisplay();
-}
-void display()
-{
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glColor3f(1,0,0);
-	glLoadIdentity();
-	DrawCylinder(0.5,0.5,Vector3(0,0,0),Vector3(0,-1,0));
-	glutSwapBuffers();
-}
-
-void init()
-{
-	glClearColor(1, 1, 1, 1);
-
-	glEnable(GL_LIGHTING);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_LIGHT0);
-	const GLfloat light_ambient[] = { 1.0f, 1.0f, 1.0f, 0.0f };
-	const GLfloat light_diffuse[] = { 1.0f, 1,1, 1.0f };
-	const GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	const GLfloat light_position[] = { 0.0f, 1, 0.0f, 1.0f };
-	const GLfloat light_shininess[] = { 50.0f };
-	const GLfloat light_emissive[] = { 1, -1, 1, 0 };
-
-	glEnable(GL_COLOR_MATERIAL);
-
-	glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
-	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-	glLightfv(GL_LIGHT0, GL_EMISSION, light_emissive);
-
-	glMaterialfv(GL_FRONT, GL_SPECULAR, light_specular);
-	glMaterialfv(GL_FRONT, GL_SHININESS, light_shininess);
-}
-#endif
