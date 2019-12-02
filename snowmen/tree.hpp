@@ -26,7 +26,7 @@ class Tree {
 			   GLfloat length, GLfloat angle);
 	void drawBranch(GLfloat start, GLfloat theta,
 			GLfloat branchLength, GLfloat branchRadius);
-	void drawLeaves(int num, GLfloat leafLength);
+	void drawLeaves(GLfloat branchLength, int num, GLfloat leafLength);
 	void drawLeafSet(GLfloat branchLength, GLfloat leafLength,
 			 GLfloat rotation, int num);
 	void drawLeaf(GLfloat leafLength, GLfloat rotate);

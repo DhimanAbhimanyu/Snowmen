@@ -61,7 +61,7 @@ void Tree::drawBranchSet(GLfloat start, GLfloat height,
 {
 	glPushMatrix();
 
-	glTranslatef(0, treeHeight, 0);
+	glTranslatef(0, height, 0);
 	// Draw the branch set
 	glRotatef(angle, 0, 1, 0);
 	for (GLfloat theta = 0, inc = GLfloat(360) / branchSet;
@@ -74,7 +74,7 @@ void Tree::drawBranchSet(GLfloat start, GLfloat height,
 
 // Draw a branch
 void Tree::drawBranch(GLfloat start, GLfloat theta,
-		      GLfloat branchLength, GLfloat branchRadius)
+		      GLfloat length, GLfloat radius)
 {
 	// Set the color for the branch
 	glColor3f(DISPLAY_COLOR_TREE_BRANCH.getR(),
@@ -87,16 +87,16 @@ void Tree::drawBranch(GLfloat start, GLfloat theta,
 	glTranslatef(start * sinf(rad), 0, start * cosf(rad));
 	glRotatef(theta, 0, 1, 0);
 	// Draw the branch
-	drawCurr->drawCone(branchRadius, branchLength, 5, 5);
+	drawCurr->drawCone(radius, length, 5, 5);
 	// Draw the Leaves
-	drawLeaves(leavesSet, leafLength);
+	drawLeaves(length, leavesSet, leafLength);
 
 	glPopMatrix();
 }
 
 // Draw leaves of length, upon a branch.
 // The leaves are arranged in a set of leaves
-void Tree::drawLeaves(int num, GLfloat leafLength)
+void Tree::drawLeaves(GLfloat branchLength, int num, GLfloat leafLength)
 {
 	// Set the color for the leaves
 	glColor3f(DISPLAY_COLOR_TREE_LEAVES.getR(),
