@@ -1,206 +1,131 @@
+// IMP Consult https://www.khronos.org/opengl/wiki/
+
+// TBD
+// - Modify all comments
+// - Get Rid of Hard-Coded Values
+// - ONLY USE glOrho!
+
 #include <iostream>
 #include <cmath>
 #include <GL/glut.h>
 #include <cstring>
 
-#include "vertex.hpp"
+#include "util.hpp"
+#include "consts.hpp"
 
-static float theta = 0.0, modTheta = 0.0, aspectRatio;
-static float x = 0.0f, y = 1.75f, z = 5.0f;
-static float lx = 0.0f, ly = 0.0f, lz = -1.0f;
-static int modPos = 0, height, width;
-static void *font;
+static float theta = 0.0, modTheta = 0.0, aspectRatio, modPos = 0.0;
+static Vertex3f viewPos(0.0f, 1.75f, 5.0f);
+static Vertex3f deltaViewPos(0.0f, 0.0f, -1.0f);
+static int height, width;
 static GLint snowmenDisplayList;
 
-static int frame, tm, tmBase = 0;
-static char s[30];
+static void initializeWindow(void);
+static void initScene(void);
+static GLuint createDisplayList(void);
+static void displayScene(void);
+static void drawSnowMan(void);
+static void downKey(int key, int x, int y);
+static void upKey(int key, int x, int y);
+static void procKeys(unsigned char key, int x, int y);
+static void moveDisp(float disp);
+static void rotateTheta(float angle);
+static void modifySize(int newWidth, int newHeight);
+static void setCameraPosition(void);
+static void drawArc(Vertex3f p0, Vertex3f p1, Vertex3f p2, Vertex3f p3,
+		    int numPoints);
+static Vertex3f getSphereVertex(Vertex3f centre, float radius,
+				float theta, float phi);
+static void drawArm(Vertex3f start, float length, Vertex3f dirVector);
+static void drawButtons(Vertex3f centre, float radius, int num);
+static void drawEyes(Vertex3f trans, float radius, float seperation);
 
-static void initWindow();
+// TBD
+static void drawHat();
+static void drawMuffler();
+static void drawSunglasses();
 
-void changeSize(int newWidth, int newHeight)
+int main(int argc, char **argv)
 {
-	// Prevent a divide by zero, when window is too short
-	// (you cant make a window of zero width).
-	if(newHeight == 0)
-		newHeight = 1;
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
+	glutInitWindowSize(640, 360);
+	glutInitWindowPosition(100, 100);
+	glutCreateWindow("Snowmen");
+	// Set the background Dark blue
+	glClearColor(COLOR_BACKGROUND.getR(), COLOR_BACKGROUND.getG(),
+		     COLOR_BACKGROUND.getB(), 0.0f);
+	// Cull triangles that do not face the camera
+	glEnable(GL_CULL_FACE);
+	// Enable Anti-aliasing
+	glEnable(GL_LINE_SMOOTH);
 
-	width = newWidth;
-	height = newHeight;
-	aspectRatio = 1.0f * width / height;
-	// Reset the coordinate system before modifying
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
- 
-	// Set the viewport to be the entire window
-	glViewport(0, 0, width, height);
+	// Finish off initializing the window
+	initializeWindow();
 
-	// Set the clipping volume
-	gluPerspective(45, aspectRatio, 0.1, 1000);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	gluLookAt(x, y, z,
-		  x + lx, y + ly, z + lz,
-		  0.0f, 1.0f, 0.0f);
+	glutMainLoop();
+
+	return(0);
 }
 
-void drawSnowMan()
+void initializeWindow(void)
 {
-	glColor3f(1.0f, 1.0f, 1.0f);
-
-	// Draw Body 
-	glTranslatef(0.0f ,0.75f, 0.0f);
-	glutSolidSphere(0.75f, 20, 20);
-
-	// Draw Head
-	glTranslatef(0.0f, 1.0f, 0.0f);
-	glutSolidSphere(0.25f, 20, 20);
-
-	// Draw Eyes
-	glPushMatrix();
-	glColor3f(0.0f, 0.0f, 0.0f);
-	glTranslatef(0.05f, 0.10f, 0.18f);
-	glutSolidSphere(0.05f, 10, 10);
-	glTranslatef(-0.1f, 0.0f, 0.0f);
-	glutSolidSphere(0.05f, 10, 10);
-	glPopMatrix();
-
-	// Draw Nose
-	glColor3f(1.0f, 0.5f , 0.5f);
-	glRotatef(0.0f, 1.0f, 0.0f, 0.0f);
-	glutSolidCone(0.08f, 0.5f, 10, 2);
+	glutIgnoreKeyRepeat(1);
+	glutKeyboardFunc(procKeys);
+	glutSpecialFunc(downKey);
+	glutSpecialUpFunc(upKey);
+	glutDisplayFunc(displayScene);
+	glutIdleFunc(displayScene);
+	glutReshapeFunc(modifySize);
+	initScene();
 }
 
-GLuint createDL()
+void initScene(void)
 {
-	GLuint snowManDL;
+	glEnable(GL_DEPTH_TEST);
+	snowmenDisplayList = createDisplayList();
+}
 
-	// Create the id for the list
-	snowManDL = glGenLists(2);
+GLuint createDisplayList(void)
+{
+	// Create an id for the list
+	GLuint snowMenDisplayList = glGenLists(2);
 
-	// Draw snowman
-	glNewList(snowManDL+1, GL_COMPILE);
+	// Create the snowman
+	glNewList(snowMenDisplayList + 1, GL_COMPILE);
 	drawSnowMan();
 	glEndList();
 
-	// start list
-	glNewList(snowManDL, GL_COMPILE);
-	// call the function that contains the rendering commands
+	// Begin the list
+	glNewList(snowMenDisplayList, GL_COMPILE);
+	// Invoke the rendering func
 	for(int i = -3; i < 3; i++)
 		for(int j = -3; j < 3; j++) {
 			glPushMatrix();
 			glTranslatef(i * 10.0, 0, j * 10.0);
-			glCallList(snowManDL + 1);
+			glCallList(snowMenDisplayList + 1);
 			glPopMatrix();
 		}
-	// endList
+	// End the List
 	glEndList();
 
-	return(snowManDL);
+	return snowMenDisplayList;
 }
 
-void initScene()
-{
-	glEnable(GL_DEPTH_TEST);
-	snowmenDisplayList = createDL();
-}
-
-void orientMe(float ang)
-{
-	lx = sin(ang);
-	lz = -cos(ang);
-	glLoadIdentity();
-	gluLookAt(x, y, z,
-		  x + lx, y + ly, z + lz,
-		  0.0f, 1.0f, 0.0f);
-}
-
-
-void moveMeFlat(int i)
-{
-	x = x + i * (lx * 0.1);
-	z = z + i * (lz * 0.1);
-	glLoadIdentity();
-	gluLookAt(x, y, z,
-		  x + lx, y + ly, z + lz,
-		  0.0f, 1.0f, 0.0f);
-}
-
-void setOrthographicProjection()
-{
-	// switch to projection mode
-	glMatrixMode(GL_PROJECTION);
-	// save previous matrix which contains the
-	//settings for the perspective projection
-	glPushMatrix();
-	// reset matrix
-	glLoadIdentity();
-	// set a 2D orthographic projection
-	gluOrtho2D(0, width, 0, height);
-	// invert the y axis, down is positive
-	glScalef(1, -1, 1);
-	// mover the origin from the bottom left corner
-	// to the upper left corner
-	glTranslatef(0, -height, 0);
-	glMatrixMode(GL_MODELVIEW);
-}
-
-void resetPerspectiveProjection()
-{
-	// set the current matrix to GL_PROJECTION
-	glMatrixMode(GL_PROJECTION);
-	// restore previous settings
-	glPopMatrix();
-	// get back to GL_MODELVIEW matrix
-	glMatrixMode(GL_MODELVIEW);
-}
-
-void renderBitmapString(float x, float y, char *string)
-{
-	char *c;
-	// set position to start drawing fonts
-	glRasterPos2f(x, y);
-	// loop all the characters in the string
-	for (c = string; *c != '\0'; c++)
-		glutBitmapCharacter(font, *c);
-}
-
-void displayInfo(void)
-{
-	glColor3f(0.0f, 1.0f, 1.0f);
-	setOrthographicProjection();
-	glPushMatrix();
-	glLoadIdentity();
-	renderBitmapString(30, 15, (char *) "GLUT Tutorial @ 3D Tech");
-	renderBitmapString(30, 35, s);
-	renderBitmapString(30, 55, (char *) "Esc - Quit");
-	glPopMatrix();
-	resetPerspectiveProjection();
-}
-
-void saveFPS(void)
-{
-	frame++;
-	tm = glutGet(GLUT_ELAPSED_TIME);
-	if (tm - tmBase > 1000) {
-		sprintf(s, "FPS:%4.2f", frame * 1000.0 / (tm - tmBase));
-		tmBase = tm;  
-		frame = 0;
-	}
-}
-
-void renderScene(void)
+void displayScene(void)
 {
 	if (modPos)
-		moveMeFlat(modPos);
+		moveDisp(modPos);
 	if (modTheta) {
 		theta += modTheta;
-		orientMe(theta);
+		rotateTheta(theta);
 	}
 
+	// TBD Most probably don't need to set Depth Buffer for Ortho projec!
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Draw ground
-	glColor3f(0.9f, 0.9f, 0.9f);
+	glColor3f(COLOR_GROUND.getR(), COLOR_GROUND.getG(),
+		  COLOR_GROUND.getB());
 	glBegin(GL_QUADS);
 	glVertex3f(-100.0f, 0.0f, -100.0f);
 	glVertex3f(-100.0f, 0.0f,  100.0f);
@@ -208,22 +133,156 @@ void renderScene(void)
 	glVertex3f( 100.0f, 0.0f, -100.0f);
 	glEnd();
 
+	// TBD Draw Trees
+
+	// TBD Only Draw As Many Required!
 	// Draw 36 Snow Men
 	glCallList(snowmenDisplayList);
- 
-	// saveFPS();
-	// displayInfo();
-	
+
 	glutSwapBuffers();
 }
 
-void processNormalKeys(unsigned char key, int x, int y)
+void drawSnowMan(void)
 {
-	if (key == 27)
-		exit(0);
+	// TBD
+	// - Figure Must be Unique
+	// - Must contain at least 10 primitives!
+
+	glColor3f(COLOR_BODY.getR(), COLOR_BODY.getG(),
+		  COLOR_BODY.getB());
+
+	// Lower Body
+	glTranslatef(0.0f, 0.5f, 0.0f);
+	glutSolidSphere(0.5f, 30, 30);
+
+	// Upper Body
+	glTranslatef(0.0f, 0.5f, 0.0f);
+	glutSolidSphere(0.375f, 30, 30);
+
+	// Buttons
+	glColor3f(COLOR_BUTTON.getR(), COLOR_BUTTON.getG(),
+		  COLOR_BUTTON.getB());
+	drawButtons(Vertex3f(0.0f, 0.0f, 0.0f), 0.375f, 5);
+	
+	// Head
+	glColor3f(COLOR_HEAD.getR(), COLOR_HEAD.getG(),
+		  COLOR_HEAD.getB());
+	glTranslatef(0.0f, 0.5f, 0.0f);
+	glutSolidSphere(0.25f, 30, 30);
+
+	// Arms
+	glColor3f(COLOR_ARM.getR(), COLOR_ARM.getG(),
+		  COLOR_ARM.getB());
+	drawArm(Vertex3f(0.0f, -0.5f, 0.0f), 1.0f,
+		Vertex3f(0.707f, 0.25f, 0.707f));
+	drawArm(Vertex3f(0.0f, -0.5f, 0.0f), 1.0f,
+		Vertex3f(-0.707f, 0.25f, 0.707f));
+
+	// Eyes
+	glColor3f(COLOR_EYE.getR(), COLOR_EYE.getG(),
+		  COLOR_EYE.getB());
+	drawEyes(Vertex3f(0.05f, 0.10f, 0.18f), 0.05f, -0.1f);
+
+	// Nose
+	glColor3f(COLOR_NOSE.getR(), COLOR_NOSE.getG(),
+		  COLOR_NOSE.getB());
+	glRotatef(0.0f, 1.0f, 0.0f, 0.0f);
+	glutSolidCone(0.08f, 0.5f, 25, 5);
+
+	// Mouth
+	glColor3f(COLOR_MOUTH.getR(), COLOR_MOUTH.getG(),
+		  COLOR_MOUTH.getB());
+	glLineWidth(3);
+	Vertex3f centre(0.0f, -0.1875f, 0.0625f);
+	drawArc(getSphereVertex(centre, 0.25f, -M_PI / 4, -M_PI / 4),
+		getSphereVertex(centre, 0.25f, -M_PI / 8, -M_PI / 8),
+		getSphereVertex(centre, 0.25f, M_PI / 8, M_PI / 8),
+		getSphereVertex(centre, 0.25f, M_PI / 4, M_PI / 4),
+		50);
+
+	// Hat
+	drawHat();
+	
+	// Muffler
+	drawMuffler();
+
+	// Sunglasses
+	drawSunglasses();
 }
 
-void pressKey(int key, int x, int y)
+// Get tbe co-ordinate of a point upon a sphere
+// ref. https://en.wikipedia.org/wiki/Sphere#Equations_in_three-dimensional_space
+Vertex3f getSphereVertex(Vertex3f centre, float radius,
+			 float theta, float phi)
+{
+	return Vertex3f(centre.getX() + radius * sin(theta) * cos(phi),
+			centre.getY() + radius * sin(theta) * sin(phi),
+			centre.getZ() + radius * cos(theta));
+}
+
+void drawButtons(Vertex3f centre, float radius, int num)
+{
+	glLineWidth(6);
+	glPushMatrix();
+	for (float theta = -M_PI * 3.0f / 8.0f, inc = M_PI * 3.0f / (8.0f * num);
+	     theta <= M_PI * 3.0f / 8.0f; theta += inc + inc) {
+		glBegin(GL_LINES);
+		Vertex3f vertexA = getSphereVertex(
+			centre, radius, theta, copysignf(M_PI / 2, theta));
+		Vertex3f vertexB = getSphereVertex(
+			centre, radius, theta + inc,
+			copysignf(M_PI / 2, theta + inc));
+		glVertex3f(vertexA.getX(), vertexA.getY(), vertexA.getZ());
+		glVertex3f(vertexB.getX(), vertexB.getY(), vertexB.getZ());
+		glEnd();
+	}
+	glPopMatrix();	
+}
+
+void drawArm(Vertex3f start, float length, Vertex3f dirVector)
+{
+	glPushMatrix();
+	glLineWidth(3);
+	glBegin(GL_LINES);
+	glVertex3f(start.getX(), start.getY(), start.getZ());
+	Vertex3f end(start.getX() + dirVector.getX() * length,
+		     start.getY() + dirVector.getY() * length,
+		     start.getZ() + dirVector.getZ() * length);
+	glVertex3f(end.getX(), end.getY(), end.getZ());
+	glEnd();
+
+	glLineWidth(1);
+	glBegin(GL_LINES);
+	glVertex3f(end.getX(), end.getY(), end.getZ());
+	Vertex3f finger(end.getX() + dirVector.getX() * length / 4,
+			end.getY() + dirVector.getY() * length / 4,
+			end.getZ() + dirVector.getZ() * length / 4);
+	glVertex3f(finger.getX(), finger.getY(), finger.getZ());
+	glEnd();
+	glBegin(GL_LINES);
+	glVertex3f(end.getX(), end.getY(), end.getZ());
+	glVertex3f(finger.getX(), finger.getY() + 0.1f, finger.getZ() + 0.1f);
+	glEnd();
+	glBegin(GL_LINES);
+	glVertex3f(end.getX(), end.getY(), end.getZ());
+	glVertex3f(finger.getX(), finger.getY() + 0.1f, finger.getZ() - 0.1f);
+	glEnd();
+	
+	glPopMatrix();
+}
+
+void drawEyes(Vertex3f trans, float radius, float seperation)
+{
+	glPushMatrix();
+	glTranslatef(trans.getX(), trans.getY(), trans.getZ());
+	glutSolidSphere(radius, 25, 25);
+	glTranslatef(seperation, 0.0f, 0.0f);
+	glutSolidSphere(radius, 25, 25);
+	glPopMatrix();
+}
+
+// Rotate camera when the direction keys are pressed
+void downKey(int key, int x, int y)
 {
 	switch (key) {
 	case GLUT_KEY_LEFT:
@@ -235,16 +294,17 @@ void pressKey(int key, int x, int y)
 		break;
 
 	case GLUT_KEY_UP:
-		modPos = 1;
+		modPos = 1.0;
 		break;
 
 	case GLUT_KEY_DOWN:
-		modPos = -1;
+		modPos = -1.0;
 		break;
 	}
 }
 
-void releaseKey(int key, int x, int y)
+// Do bounds checking upon the release the direction keys
+void upKey(int key, int x, int y)
 {
 	switch (key) {
 	case GLUT_KEY_LEFT:
@@ -256,42 +316,102 @@ void releaseKey(int key, int x, int y)
 		break;
 
 	case GLUT_KEY_UP:
-		if (modPos > 0) modPos = 0;
+		if (modPos > 0.0f) modPos = 0.0f;
 		break;
 
 	case GLUT_KEY_DOWN:
-		if (modPos < 0)
-			modPos = 0;
+		if (modPos < 0.0f) modPos = 0.0f;
 		break;
 	}
 }
 
-void initWindow()
+// Quit upon 'Esc' or 'q'
+void procKeys(unsigned char key, int x, int y)
 {
-	glutIgnoreKeyRepeat(1);
-	glutKeyboardFunc(processNormalKeys);
-	glutSpecialFunc(pressKey);
-	glutSpecialUpFunc(releaseKey);
-	glutDisplayFunc(renderScene);
-	glutIdleFunc(renderScene);
-	glutReshapeFunc(changeSize);
-	initScene();
+	if (key == 27 || key == 'q') exit(0);
 }
 
-int main(int argc, char **argv)
+void moveDisp(float disp)
 {
-	font = GLUT_BITMAP_8_BY_13;
-	
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowPosition(100, 100);
-	glutInitWindowSize(640, 360);
-	glutCreateWindow("Snowmen");
+	viewPos.setX(viewPos.getX() + disp * deltaViewPos.getX() * 0.1);
+	viewPos.setZ(viewPos.getZ() + disp * deltaViewPos.getZ() * 0.1);
+	setCameraPosition();
+}
 
-	// register all callbacks
-	initWindow();
+void rotateTheta(float angle)
+{
+	deltaViewPos.setX(sin(angle));
+	deltaViewPos.setZ(-cos(angle));
+	setCameraPosition();
+}
 
-	glutMainLoop();
+void modifySize(int newWidth, int newHeight)
+{
+	// Ensure that the newHeight ain't zero
+	if(newHeight == 0) newHeight = 1;
 
-	return(0);
+	width = newWidth;
+	height = newHeight;
+	aspectRatio = 1.0f * width / height;
+
+	// Reset the coordinate system before modifying
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	// Set the viewport to be the entire window
+	glViewport(0, 0, width, height);
+
+	// Set the clipping volume
+	// TBD Switch to glOrtho!
+	gluPerspective(45, aspectRatio, 0.1, 1000);
+	glMatrixMode(GL_MODELVIEW);
+	setCameraPosition();
+}
+
+void setCameraPosition(void)
+{
+	glLoadIdentity();
+	gluLookAt(viewPos.getX(), viewPos.getY(), viewPos.getZ(),
+		  viewPos.getX() + deltaViewPos.getX(),
+		  viewPos.getY() + deltaViewPos.getY(),
+		  viewPos.getZ() + deltaViewPos.getZ(), 0.0f, 1.0f, 0.0f);
+}
+
+// Draw an Arc on a Sphere by Using a Cubic Bezier Curve
+// ref. https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Cubic_B%C3%A9zier_curves
+void drawArc(Vertex3f p0, Vertex3f p1, Vertex3f p2, Vertex3f p3,
+	     int numPoints)
+{
+	glPushMatrix();
+	glBegin(GL_LINE_STRIP);
+	for (int idx = 0; idx <= numPoints; idx++) {
+		float t = ((float) idx) / numPoints;
+		float a = (1.0f - t) * (1.0f - t) * (1.0f - t);
+		float b = 3.0f * (1.0f - t) * (1.0f - t) * t;
+		float c = 3.0f * (1.0f - t) * t * t;
+		float d = t * t * t * t;
+		glVertex3f(a * p0.getX() + b * p1.getX()
+			   + c * p2.getX() + d * p3.getX(),
+			   a * p0.getY() + b * p1.getY()
+			   + c * p2.getY() + d * p3.getY(),
+			   a * p0.getZ() + b * p1.getZ()
+			   + c * p2.getZ() + d * p3.getZ());
+	}
+	glEnd();
+	glPopMatrix();
+}
+
+void drawHat()
+{
+	// TBD
+}
+
+void drawMuffler()
+{
+	// TBD
+}
+
+void drawSunglasses()
+{
+	// TBD
 }
