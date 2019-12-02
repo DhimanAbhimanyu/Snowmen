@@ -1,0 +1,23 @@
+part 1: 
+1) graphics,color and gpu
+2) 3d projections , co-ordinates
+3) OpenGL intro and primitives
+
+part2: Drawing in Space
+1) open gl primitives 
+2) lines and triangles 
+3) solid objects and other primates in 3d
+
+part 3:
+1) transformations in depths and pipelines 
+2) matrix
+3) projections 
+4) moving objects using a camera
+
+part 4: colour lighting, & material 
+1) colour, lighting & the echo
+2) pc color and display , colour in OpenGL 
+3) material and colour in spacial world 
+4) lighting effects
+5) shadows 
+6) spreading fog and accumulation buffer
