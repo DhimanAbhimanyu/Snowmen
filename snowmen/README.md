@@ -1,0 +1,1 @@
+This project was created on Debian Linux. It was compiled with g++, version 9.2. 
