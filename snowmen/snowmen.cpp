@@ -182,7 +182,7 @@ void drawSnowMan(void)
 	// Eyes
 	glColor3f(COLOR_EYE.getR(), COLOR_EYE.getG(),
 		  COLOR_EYE.getB());
-	drawEyes(Vector3f(0.05f, 0.10f, 0.18f), 0.05f, -0.1f);
+	drawEyes(Vector3f(0.05f, 0.10f, 0.18f), 0.05f, -0.15f);
 
 	// Nose
 	glColor3f(COLOR_NOSE.getR(), COLOR_NOSE.getG(),
@@ -228,15 +228,26 @@ void drawButtons(Vector3f centre, float radius, int num)
 	glPushMatrix();
 	for (float theta = -M_PI * 3.0f / 8.0f, inc = M_PI * 3.0f / (8.0f * num);
 	     theta <= M_PI * 3.0f / 8.0f; theta += inc + inc) {
-		glBegin(GL_LINES);
-		Vector3f vertexA = getSphereVertex(
-			centre, radius, theta, copysignf(M_PI / 2, theta));
-		Vector3f vertexB = getSphereVertex(
+		Vector3f buttonCentre = getSphereVertex(
 			centre, radius, theta + inc,
 			copysignf(M_PI / 2, theta + inc));
-		glVertex3f(vertexA.getX(), vertexA.getY(), vertexA.getZ());
-		glVertex3f(vertexB.getX(), vertexB.getY(), vertexB.getZ());
-		glEnd();
+		Vector3f axis = buttonCentre - centre;
+
+		Vector3f pos = Vector3f(0,0, radius / 2);
+		float angle = Vector3f::angleRad(axis, Vector3f(0, 0, 1)) / PIby180;
+
+		pos = pos.rotate(Vector3f(axis.getY(), axis.getX(), 0), angle);
+		buttonCentre -= pos;
+
+		glPushMatrix();
+
+		glTranslatef(buttonCentre.getX(), buttonCentre.getY(),
+			     buttonCentre.getZ());
+		glRotatef(theta, axis.getY(), axis.getX(), 0);
+
+		glutSolidSphere(0.0375, 25, 25);		
+
+		glPopMatrix();
 	}
 	glPopMatrix();
 }
@@ -364,19 +375,21 @@ void modifySize(int newWidth, int newHeight)
 
 void setCameraPosition(void)
 {
+	const float SZ = 3.125f;
+	
 	// Reset the coordinate system
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 
 	// Set up the orthographic projection
 	if (width > height)
-		// width is smaller, go from -25 .. 25 in width
-		glOrtho(-6.25f, 6.25f, -6.25f / aspectRatio,
-			6.25f / aspectRatio, -1.0f, 1.0f);
+		// width is smaller, go from -SZ .. SZ in width
+		glOrtho(-SZ, SZ, -SZ / aspectRatio,
+			SZ / aspectRatio, -1.0f, 1.0f);
 	else
-		// height is smaller, go from -25 .. 25 in height
-		glOrtho(-6.25f * aspectRatio, 6.25f * aspectRatio, -6.25f,
-			6.25f, -1.0f, 1.0f);
+		// height is smaller, go from -SZ .. SZ in height
+		glOrtho(-SZ * aspectRatio, SZ * aspectRatio, -SZ,
+			SZ, -1.0f, 1.0f);
 }
 
 // Draw an Arc on a Sphere by Using a Cubic Bezier Curve
