@@ -38,25 +38,20 @@ static void drawSunglasses();
 int main(int argc, char **argv)
 {
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowSize(640, 360);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+	glutInitWindowSize(800, 640);
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow("Snowmen");
 	// Set the background's color
 	glClearColor(COLOR_BACKGROUND.getR(), COLOR_BACKGROUND.getG(),
 		     COLOR_BACKGROUND.getB(), 0.0f);
-	// Cull triangles that do not face the camera
-	glEnable(GL_CULL_FACE);
 	// Enable Anti-aliasing
 	glEnable(GL_LINE_SMOOTH);
-
-	glShadeModel(GL_FLAT);
 
 	// Finish off initializing the window
 	initializeWindow();
 
-	setCameraPosition();
-
+	// Enter GLUT's loop
 	glutMainLoop();
 
 	return(0);
@@ -64,19 +59,27 @@ int main(int argc, char **argv)
 
 void initializeWindow(void)
 {
+	// Set the display callback
+	glutDisplayFunc(displayScene);
+
+	// Set the idle callback
+	glutIdleFunc(displayScene);
+
+	// Set the callback for when the size of the window changes
+	glutReshapeFunc(modifySize);
+
+	// Set up the callbacks for the keyboard
 	glutIgnoreKeyRepeat(1);
 	glutKeyboardFunc(procKeys);
 	glutSpecialFunc(downKey);
 	glutSpecialUpFunc(upKey);
-	glutDisplayFunc(displayScene);
-	glutIdleFunc(displayScene);
-	glutReshapeFunc(modifySize);
+
+	// Initialize the scene to be displayed
 	initScene();
 }
 
 void initScene(void)
 {
-	glEnable(GL_DEPTH_TEST);
 	snowmenDisplayList = createDisplayList();
 }
 
@@ -115,7 +118,6 @@ void displayScene(void)
 		rotateTheta(theta);
 	}
 
-	// TBD Most probably don't need to set Depth Buffer for Ortho projec!
 	// Clear the buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -134,6 +136,7 @@ void displayScene(void)
 	// Draw the Snow Men
 	glCallList(snowmenDisplayList);
 
+	glFlush();
 	glutSwapBuffers();
 }
 
@@ -168,9 +171,9 @@ void drawSnowMan(void)
 	// Arms
 	glColor3f(COLOR_ARM.getR(), COLOR_ARM.getG(),
 		  COLOR_ARM.getB());
-	drawArm(Vertex3f(0.0f, -0.5f, 0.0f), 1.0f,
+	drawArm(Vertex3f(0.375f, -0.5f, 0.0f), 1.0f,
 		Vertex3f(0.707f, 0.25f, 0.707f));
-	drawArm(Vertex3f(0.0f, -0.5f, 0.0f), 1.0f,
+	drawArm(Vertex3f(-0.375f, -0.5f, 0.0f), 1.0f,
 		Vertex3f(-0.707f, 0.25f, 0.707f));
 
 	// Eyes
@@ -347,29 +350,29 @@ void modifySize(int newWidth, int newHeight)
 
 	width = newWidth;
 	height = newHeight;
-	aspectRatio = 1.0f * width / height;
-
-	// Reset the coordinate system
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
+	aspectRatio = ((float) width) / ((float) height);
 
 	// Set the viewport to encompass the entire window
 	glViewport(0, 0, width, height);
 
-	// TBD Switch to glOrtho!
-	// Set the clipping area
-	gluPerspective(45, aspectRatio, 0.1, 1000);
-	glMatrixMode(GL_MODELVIEW);
 	setCameraPosition();
 }
 
 void setCameraPosition(void)
 {
+	// Reset the coordinate system
+	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluLookAt(viewPos.getX(), viewPos.getY(), viewPos.getZ(),
-		  viewPos.getX() + deltaViewPos.getX(),
-		  viewPos.getY() + deltaViewPos.getY(),
-		  viewPos.getZ() + deltaViewPos.getZ(), 0.0f, 1.0f, 0.0f);
+
+	// Set up the orthographic projection
+	if (width > height)
+		// width is smaller, go from -25 .. 25 in width
+		glOrtho(-6.25f, 6.25f, -6.25f / aspectRatio,
+			6.25f / aspectRatio, -1.0f, 1.0f);
+	else
+		// height is smaller, go from -25 .. 25 in height
+		glOrtho(-6.25f * aspectRatio, 6.25f * aspectRatio, -6.25f,
+			6.25f, -1.0f, 1.0f);
 }
 
 // Draw an Arc on a Sphere by Using a Cubic Bezier Curve
