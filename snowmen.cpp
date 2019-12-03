@@ -5,7 +5,7 @@
 #include <GL/freeglut.h>
 #include <GL/glut.h>
 
-#include "vector3f.hpp"
+#include "vectors.hpp"
 #include "consts.hpp"
 
 static float aspectRatio;
@@ -221,7 +221,8 @@ void drawButtons(Vector3f centre, float radius, int num)
 		Vector3f axis = buttonCentre - centre;
 
 		Vector3f pos = Vector3f(0,0, radius / 2);
-		float angle = Vector3f::angleRad(axis, Vector3f(0, 0, 1)) / PIby180;
+		float angle = Vector3f::angleRad(axis, Vector3f(0, 0, 1))
+			* 180 / M_PI;
 
 		pos = pos.rotate(Vector3f(axis.getY(), axis.getX(), 0), angle);
 		buttonCentre -= pos;
@@ -349,7 +350,8 @@ void drawHat(Vector3f centre, Vector3f axis,
 	     float radius, float height, float brimRadius)
 {
 	Vector3f pos = Vector3f(0,0, height / 2);
-	float theta = Vector3f::angleRad(axis, Vector3f(0, 0, 1)) / PIby180;
+	float theta = Vector3f::angleRad(axis, Vector3f(0, 0, 1))
+		* 180 / M_PI;
 
 	pos = pos.rotate(Vector3f(axis.getY(), axis.getX(), 0), theta);
 	centre -= pos;
