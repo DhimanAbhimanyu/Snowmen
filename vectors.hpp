@@ -141,6 +141,16 @@ public:
 		return *this;
 	}
 
+	bool operator==(const Vector3f& cmp) const
+	{
+		return x == cmp.x && y == cmp.y && z == cmp.z;
+	}
+
+	bool operator!=(const Vector3f& cmp) const
+	{
+		return x != cmp.x || y != cmp.y || z != cmp.z;
+	}
+
 	// Rotate this instance by angle radians,
 	// towards the passed vector
 	void rotate(Vector3f vec, const float &angle)
@@ -296,6 +306,16 @@ public:
 		w /= div;
 
 		return *this;
+	}
+
+	bool operator==(const Vector4f& cmp) const
+	{
+		return Vector3f::operator==(cmp) && w == cmp.w;
+	}
+
+	bool operator!=(const Vector4f& cmp) const
+	{
+		return Vector3f::operator!=(cmp) || w != cmp.w;
 	}
 
 	// Return the vector normalized

@@ -10,6 +10,7 @@
 #include <GL/freeglut.h>
 #include <GL/glut.h>
 
+#include "object.hpp"
 #include "vectors.hpp"
 #include "snowman.hpp"
 #include "rotation.hpp"
@@ -24,18 +25,16 @@ static const int NUM_SNOWMEN_GROUP = 8;
 // The radius of the groups of snowmen
 static const float RADIUS_SNOWMEN_GROUP = 8;
 
-class Display {
+class Display : public Object {
 protected:
 	GLfloat radius;
 	int num;
-
-	Vector3f position;
 
 public:
 	Display(const Vector3f& initPosition = Vector3f(),
 		const GLfloat initRadius = RADIUS_SNOWMEN,
 		const int initNum = NUM_SNOWMEN)
-		: radius(initRadius), num(initNum), position(initPosition)
+		: Object(initPosition), radius(initRadius), num(initNum)
 	{
 		assert(num > 0);
 	}
@@ -51,16 +50,6 @@ public:
 
 	virtual void init(void)
 	{
-	}
-
-	void setPosition(const Vector3f& newPosition)
-	{
-		position = newPosition;
-	}
-
-	const Vector3f& getPosition(void) const
-	{
-		return position;
 	}
 
 	void setRadius(const GLfloat newRadius)

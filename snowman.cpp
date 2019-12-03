@@ -31,7 +31,7 @@ void Snowman::draw(bool hit, const Vector3f& hitPos)
 
 	glPushMatrix();
 
-	glTranslatef(position.getX(), position.getY(), position.getZ());
+	gotoPosition();
 	glRotatef(rotation, axis.getX(), axis.getY(), axis.getZ());
 	drawLowerBody();
 	drawUpperBody();

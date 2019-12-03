@@ -2,8 +2,6 @@
 
 #include "consts.hpp"
 
-const float PIby180 = M_PI / 180.0f;
-
 // Define the Colors Used
 Color3f COLOR_BACKGROUND(0.0f, 0.0f, 0.2f);
 Color3f COLOR_GROUND(0.9f, 0.9f, 0.9f);

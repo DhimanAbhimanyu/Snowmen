@@ -1,14 +1,14 @@
 #ifndef SNOWMAN_HPP
 #define SNOWMAN_HPP
 
+#include "object.hpp"
 #include "vectors.hpp"
 #include "snowman_position.hpp"
 
-class Snowman {
+class Snowman : public Object {
 	enum BodyPart {LOWER_BODY, UPPER_BODY, HEAD, LEFT_ARM, RIGHT_ARM,
 		       NOSE, HAT, NONE};
 
-	Vector3f position;
 	GLfloat rotation;
 	Vector3f axis;
 
@@ -59,19 +59,9 @@ public:
 	Snowman(const Vector3f& initPosition = Vector3f(),
 		const GLfloat initRotation = 0,
 		const Vector3f& initAxis = Vector3f())
-		: position(initPosition), rotation(initRotation),
+		: Object(initPosition), rotation(initRotation),
 		  axis(initAxis)
 	{ }
-
-	void setPosition(const Vector3f setPosition)
-	{
-		position = setPosition;
-	}
-
-	const Vector3f& getPosition(void) const
-	{
-		return position;
-	}
 
 	void setRotation(const GLfloat setRotation)
 	{

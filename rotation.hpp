@@ -23,19 +23,13 @@ public:
 	// Convert degrees to radians
 	static float deg2Rad(const float degree)
 	{
-		// The value of PI divided by 180
-		const float byPI180 = M_PI / 180;
-
-		return degree * byPI180;
+		return degree * M_PI / 180;
 	}
 
 	// Convert radians to degrees
 	static float rad2Deg(const float radian)
 	{
-		// The value of 180 divided by PI
-		const float by180PI = 180 / M_PI;
-
-		return radian * by180PI;
+		return radian * 180 / M_PI;
 	}
 
 	static void adjustTheta(float &theta)

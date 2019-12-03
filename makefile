@@ -1,17 +1,19 @@
 CXX = g++
 CXXFLAGS += -Wall
 
-INC = colors.hpp vectors.hpp tree.hpp drawing.hpp
-INC += display_colors.hpp light0_consts.hpp moving_object.hpp
-INC += consts.hpp globals.hpp snowman_position.hpp
-INC += displaygroupfunc.hpp display.hpp draw.hpp
-INC += globals.hpp rotation.hpp snowman.hpp shading.hpp
+INC = branch.hpp colors.hpp display_colors.hpp displaygroupfunc.hpp
+INC += display.hpp draw.hpp drawing.hpp globals.hpp light0_consts.hpp
+INC += moving_object.hpp object.hpp rotation.hpp shading.hpp snowman.hpp
+INC += snowman_position.hpp tree.hpp tree_position.hpp tree_set.hpp util.hpp
+INC += vectors.hpp branch.hpp branch_position.hpp
+INC += leaf.hpp leaf_position.hpp
 
-SRC = main.cpp display.cpp snowman.cpp shading.cpp tree.cpp drawing.cpp
+SRC = branch.cpp display.cpp drawing.cpp main.cpp shading.cpp
+SRC += snowman.cpp tree.cpp branch.cpp leaf.cpp
 
 DEP = $(patsubst %.cpp,.%.d,$(SRC))
 OBJ = $(patsubst %.cpp,%.o,$(SRC))
-OP = snowmen
+OP = snowman
 
 LIBS = -lGL -lGLU -lm -lglut -lGLEW
 
